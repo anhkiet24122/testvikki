@@ -137,19 +137,27 @@
         .capture-btn.horizontal { background: #6f42c1; }
         .back-btn { background: #6c757d; margin-top: 10px; width: 100%; }
 
+        /* GIAO DIỆN POPUP CHỐNG TRÔI NÚT */
         #image-modal {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-            background: rgba(0,0,0,0.85); z-index: 9999; flex-direction: column; 
-            align-items: center; justify-content: center; padding: 20px;
+            background: rgba(0,0,0,0.9); z-index: 9999; flex-direction: column; 
+            align-items: center; justify-content: space-between; padding: 20px; box-sizing: border-box;
         }
         #image-modal p {
-            color: white; font-size: 16px; font-weight: bold; text-align: center; margin-bottom: 15px;
-            background: var(--vikki-magenta); padding: 10px 15px; border-radius: 8px;
+            color: white; font-size: 14px; font-weight: bold; text-align: center; margin-bottom: 10px;
+            background: var(--vikki-magenta); padding: 10px; border-radius: 8px; flex-shrink: 0; width: 100%; max-width: 400px;
         }
-        #image-modal .img-container { overflow: auto; max-height: 70vh; width: 100%; text-align: center; }
-        #captured-image { max-width: 100%; border-radius: 4px; box-shadow: 0 5px 25px rgba(0,0,0,0.5); }
-        
-        .modal-buttons { display: flex; gap: 10px; margin-top: 20px; width: 100%; max-width: 400px;}
+        #image-modal .img-container { 
+            flex-grow: 1; display: flex; align-items: center; justify-content: center; 
+            width: 100%; overflow: hidden;
+        }
+        #captured-image { 
+            max-width: 100%; max-height: 100%; object-fit: contain; 
+            border-radius: 8px; box-shadow: 0 5px 25px rgba(0,0,0,0.5); 
+        }
+        .modal-buttons { 
+            display: flex; gap: 10px; margin-top: 15px; width: 100%; max-width: 400px; flex-shrink: 0;
+        }
         .download-btn { flex: 1; background: #28a745; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; font-size: 15px; cursor: pointer; }
         .close-btn { flex: 1; background: #333; color: white; border: 2px solid white; padding: 12px; border-radius: 8px; font-weight: bold; font-size: 15px; cursor: pointer; }
 
@@ -247,15 +255,15 @@
                 </div>
             </div>
             
-            <!-- Các nút bấm chức năng -->
-            <div class="action-buttons copy-section">
+            <!-- THẺ data-html2canvas-ignore GIÚP NÚT KHÔNG BAO GIỜ BỊ ẨN KHI LỖI -->
+            <div class="action-buttons copy-section" data-html2canvas-ignore="true">
                 <button class="copy-btn" onclick="copyToClipboard()">📋 Copy Zalo</button>
             </div>
-            <div class="action-buttons capture-section">
+            <div class="action-buttons capture-section" data-html2canvas-ignore="true">
                 <button class="capture-btn" onclick="captureVertical()">📸 Ảnh Dọc</button>
                 <button class="capture-btn horizontal" onclick="captureHorizontal()">📸 Ảnh Ngang</button>
             </div>
-            <button class="back-btn" onclick="goBack()">🔙 Quay lại chỉnh sửa</button>
+            <button class="back-btn" onclick="goBack()" data-html2canvas-ignore="true">🔙 Quay lại chỉnh sửa</button>
         </div>
     </div>
 </div>
@@ -272,12 +280,14 @@
     <div class="exp-body" id="exp-body"></div>
 </div>
 
-<!-- POPUP HIỆN ẢNH ĐỂ LƯU -->
+<!-- POPUP HIỆN ẢNH ĐỂ LƯU CHỐNG TRÔI NÚT -->
 <div id="image-modal">
-    <p>👇 BẤM VÀO NÚT BÊN DƯỚI ĐỂ TẢI ẢNH 👇</p>
-    <div class="img-container"><img id="captured-image" src="" alt="Báo cáo"></div>
+    <p>👇 BẤM TẢI XUỐNG HOẶC NHẤN GIỮ ẢNH ĐỂ LƯU 👇</p>
+    <div class="img-container">
+        <img id="captured-image" src="" alt="Báo cáo">
+    </div>
     <div class="modal-buttons">
-        <button class="download-btn" onclick="downloadImage()">⬇️ Tải Ảnh Về Máy</button>
+        <button class="download-btn" onclick="downloadImage()">⬇️ Tải Ảnh</button>
         <button class="close-btn" onclick="document.getElementById('image-modal').style.display='none'">Đóng Lại</button>
     </div>
 </div>
@@ -533,19 +543,15 @@
     /* --- CƠ CHẾ CHỤP ẢNH TÀNG HÌNH & CHỐNG TREO --- */
     function captureVertical() {
         const container = document.getElementById('main-container');
-        const actionSections = document.querySelectorAll('.action-buttons, .back-btn');
         const originalBg = container.style.background;
-        
-        actionSections.forEach(el => el.style.display = 'none');
         container.style.background = 'white';
         
         html2canvas(container, { scale: 2, backgroundColor: "#ffffff", useCORS: true }).then(canvas => {
             document.getElementById('captured-image').src = canvas.toDataURL('image/png');
             document.getElementById('image-modal').style.display = 'flex';
         }).catch(err => {
-            alert("Đã xảy ra lỗi khi tạo ảnh dọc.");
+            alert("Lỗi khi tạo ảnh dọc. Trình duyệt hoặc máy chủ của bạn chặn tính năng quét ảnh.");
         }).finally(() => {
-            actionSections.forEach(el => el.style.display = (el.classList.contains('back-btn') ? 'block' : 'flex'));
             container.style.background = originalBg;
         });
     }
@@ -553,27 +559,28 @@
     function captureHorizontal() {
         const exportNode = document.getElementById('export-layout');
         
-        // Hiện layout trong suốt và giấu dưới cùng
+        // Hiện layout nhưng giấu chìm bên dưới trang web
         exportNode.style.left = '0';
-        exportNode.style.top = '0';
         exportNode.style.zIndex = '-100';
-        exportNode.style.opacity = '0'; 
 
         html2canvas(exportNode, { scale: 2, backgroundColor: "#ffffff", useCORS: true }).then(canvas => {
             document.getElementById('captured-image').src = canvas.toDataURL('image/png');
             document.getElementById('image-modal').style.display = 'flex';
         }).catch(err => {
-            alert("Trình duyệt chặn khởi tạo ảnh ngang. Vui lòng thử lại.");
+            alert("Lỗi khi tạo ảnh ngang. Trình duyệt hoặc máy chủ của bạn chặn tính năng quét ảnh.");
         }).finally(() => {
-            // Vòng bảo vệ: Luôn dọn dẹp sạch sẽ
+            // Luôn dọn dẹp trả nó về hư không
             exportNode.style.left = '-9999px';
-            exportNode.style.opacity = '1';
         });
     }
 
     /* --- NÚT TẢI ẢNH TỰ ĐỘNG --- */
     function downloadImage() {
         const img = document.getElementById('captured-image');
+        if (!img.src || img.src === window.location.href) {
+            alert("Ảnh chưa được tạo thành công!");
+            return;
+        }
         const link = document.createElement('a');
         link.href = img.src;
         link.download = 'Bao-Cao-Lai-Suat-Vikki.png';
