@@ -1,1 +1,508 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Công Cụ Tính Lãi Suất Tối Ưu - Vikki Digital Bank</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        :root {
+            --vikki-blue: #1d00ff;
+            --vikki-magenta: #e800a0;
+            --vikki-orange: #ff8c00;
+            --vikki-purple: #7824c9;
+            --bg-color: #f4f6f9;
+            --text-main: #333;
+        }
+        * {
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Roboto, Helvetica, sans-serif;
+        }
+        body {
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 10px;
+            color: var(--text-main);
+            overflow-x: hidden;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .header {
+            background: white;
+            color: var(--text-main);
+            padding: 15px;
+            text-align: center;
+            border-bottom: 4px solid transparent;
+            border-image: linear-gradient(90deg, var(--vikki-blue), var(--vikki-magenta), var(--vikki-orange)) 1;
+        }
+        .header img { max-width: 180px; height: auto; margin-bottom: 10px; }
+        .header h1 { margin: 0; font-size: 18px; text-transform: uppercase; color: var(--vikki-magenta); }
+        .header p { margin: 5px 0 0; font-size: 14px; color: #555; }
+        .content { padding: 15px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-weight: 600; margin-bottom: 5px; color: #555; font-size: 14px; }
+        input[type="text"], input[type="date"], input[type="number"] {
+            width: 100%; padding: 10px; font-size: 16px; border: 2px solid #ddd;
+            border-radius: 8px; outline: none; transition: border-color 0.3s;
+        }
+        input[type="text"]:focus, input[type="date"]:focus, input[type="number"]:focus { border-color: var(--vikki-magenta); }
+        
+        .radio-group { display: flex; gap: 10px; }
+        .radio-group label { flex: 1; cursor: pointer; text-align: center; }
+        .radio-group input { display: none; }
+        .radio-group span {
+            display: block; padding: 10px; border: 2px solid #ddd; border-radius: 8px;
+            font-weight: bold; font-size: 14px; transition: all 0.3s;
+        }
+        .radio-group input:checked + span {
+            border-color: var(--vikki-magenta); background-color: var(--vikki-magenta); color: white;
+        }
+        
+        .btn-calc {
+            width: 100%; padding: 12px; font-size: 16px; font-weight: bold; color: white;
+            background: linear-gradient(90deg, var(--vikki-blue), var(--vikki-magenta), var(--vikki-orange));
+            border: none; border-radius: 8px; cursor: pointer; box-shadow: 0 4px 15px rgba(232, 0, 160, 0.3);
+        }
+        
+        #result-area { display: none; margin-top: 15px; }
+        
+        .capture-info-header {
+            display: none; 
+            text-align: center;
+            background: #fff;
+            padding: 10px 0;
+            border-bottom: 2px dashed #eee;
+            margin-bottom: 10px;
+        }
+        .capture-info-header h3 { margin: 0; color: var(--vikki-purple); font-size: 16px; }
+        .capture-info-header p { margin: 3px 0 0; font-size: 14px; font-weight: bold; }
 
+        .result-item { background: #fff; border: 1px solid #eee; border-radius: 8px; margin-bottom: 12px; overflow: hidden; }
+        .result-title {
+            background: #f8f9fa; padding: 10px 12px; margin: 0; font-size: 15px; font-weight: bold;
+            color: var(--vikki-magenta); border-bottom: 1px solid #eee; border-left: 4px solid var(--vikki-magenta);
+        }
+        .detail-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        .detail-table th, .detail-table td { border-bottom: 1px solid #eee; padding: 8px; text-align: right; }
+        .detail-table th { background-color: #fafafa; color: #555; font-weight: 600; }
+        .detail-table th:first-child, .detail-table td:first-child { text-align: left; border-right: 1px solid #eee; }
+        .total-row { font-weight: bold; background-color: #fcf0f8; }
+        .total-row td { font-size: 14px; color: var(--vikki-purple) !important; }
+        .error { color: red; font-size: 13px; margin-top: 5px; }
+        
+        .action-buttons { display: flex; gap: 10px; margin-top: 15px; }
+        .copy-btn, .capture-btn {
+            flex: 1; padding: 12px 10px; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 14px;
+        }
+        .copy-btn { background: #28a745; }
+        .capture-btn { background: #17a2b8; }
+        .capture-btn.horizontal { background: #6f42c1; }
+
+        #image-modal {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: rgba(0,0,0,0.85); z-index: 9999; flex-direction: column; 
+            align-items: center; justify-content: center; padding: 20px;
+        }
+        #image-modal p {
+            color: white; font-size: 16px; font-weight: bold; text-align: center; margin-bottom: 15px;
+            background: var(--vikki-magenta); padding: 10px 15px; border-radius: 8px;
+        }
+        #image-modal .img-container { overflow: auto; max-height: 75vh; width: 100%; text-align: center; }
+        #captured-image { max-width: 100%; border-radius: 4px; box-shadow: 0 5px 25px rgba(0,0,0,0.5); }
+        .close-btn {
+            margin-top: 20px; background: #333; color: white; border: 2px solid white; 
+            padding: 10px 30px; border-radius: 8px; font-weight: bold; font-size: 16px; cursor: pointer;
+        }
+
+        #export-layout {
+            position: absolute; left: -9999px; top: 0; width: 1200px; 
+            background: #ffffff; padding: 40px; font-family: Arial, sans-serif; color: #000;
+        }
+        .exp-header { text-align: center; margin-bottom: 40px; }
+        .exp-header img { height: 60px; margin-bottom: 10px; }
+        .exp-header h2 { font-size: 26px; margin: 0 0 10px 0; font-weight: bold;}
+        .exp-header p { margin: 5px 0; font-size: 18px; }
+        
+        .exp-body { display: flex; gap: 20px; justify-content: space-between; align-items: flex-start; }
+        .exp-col { flex: 1; }
+        .exp-title { font-weight: bold; font-size: 16px; margin-bottom: 8px; text-transform: uppercase; }
+        .exp-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        .exp-table th, .exp-table td { border: 1px solid #000; padding: 10px 5px; text-align: right; }
+        .exp-table th { background-color: #ffff00; font-weight: bold; text-align: center; }
+        .exp-table td:first-child { text-align: left; }
+    </style>
+</head>
+<body>
+
+<div class="container" id="main-container">
+    <div class="header">
+        <img src="vikki-digital-bank-logo-c-1-1030x429.png" alt="Vikki Digital Bank">
+        <h1>Bảng Tính Lãi Suất</h1>
+        <p><b>Nhân viên tư vấn: Thu Hà - 0362630337</b></p>
+    </div>
+    
+    <div class="content">
+        <div id="input-form">
+            <div class="form-group">
+                <label for="amount">Số Tiền Gửi (VNĐ):</label>
+                <input type="text" id="amount" placeholder="Ví dụ: 900,000,000" onkeyup="formatCurrency(this)">
+                <div id="error-msg" class="error"></div>
+            </div>
+
+            <div class="form-group">
+                <label for="deposit-date">Ngày Gửi Tiền:</label>
+                <input type="date" id="deposit-date" required>
+            </div>
+
+            <div class="form-group">
+                <label>Kỳ Hạn Gửi:</label>
+                <div class="radio-group">
+                    <label><input type="radio" name="term" value="6" checked><span>6 Tháng</span></label>
+                    <label><input type="radio" name="term" value="12"><span>12 Tháng</span></label>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="pa2-manual-rate">Lãi suất Sổ Lãi PA2 (%/năm):</label>
+                <input type="number" id="pa2-manual-rate" step="0.01" placeholder="Ví dụ nhập: 7.5">
+            </div>
+
+            <div class="form-group">
+                <label>Chế Độ Phân Bổ Sổ (PA1):</label>
+                <div class="radio-group">
+                    <label><input type="radio" name="split_mode" value="auto" checked onchange="toggleManualInput()"><span>Tự Động (Tối ưu)</span></label>
+                    <label><input type="radio" name="split_mode" value="manual" onchange="toggleManualInput()"><span>Nhập Tay</span></label>
+                </div>
+            </div>
+
+            <div class="form-group" id="manual-input-group" style="display: none;">
+                <label for="manual-splits">Nhập số tiền từng sổ (Cách nhau bằng dấu +):</label>
+                <input type="text" id="manual-splits" placeholder="VD: 500,000,000 + 500,000,000" onkeyup="formatManual(this)">
+            </div>
+
+            <button class="btn-calc" onclick="calculate()">TÍNH TOÁN CHI TIẾT</button>
+        </div>
+
+        <div id="result-area">
+            <div id="capture-content">
+                <div class="capture-info-header" id="capture-info-header">
+                    <h3>THÔNG TIN GỬI TIẾT KIỆM</h3>
+                    <p id="capture-amount-text"></p>
+                    <p id="capture-date-text" style="font-size: 13px; color: #555; margin-top: 5px; font-weight: normal;"></p>
+                </div>
+
+                <div class="result-item" id="pa1-box">
+                    <h3 class="result-title">Phương Án 1</h3>
+                    <div id="pa1-table"></div>
+                </div>
+                <div class="result-item">
+                    <h3 class="result-title" style="color: var(--vikki-blue); border-left-color: var(--vikki-blue);">Phương Án 2</h3>
+                    <div id="pa2-table"></div>
+                </div>
+                <div class="result-item">
+                    <h3 class="result-title" style="color: #6c757d; border-left-color: #6c757d;">Phương Án 3</h3>
+                    <div id="pa3-table"></div>
+                </div>
+            </div>
+            
+            <div class="action-buttons copy-section">
+                <button class="copy-btn" onclick="copyToClipboard()">📋 Copy Kết Quả Gửi Zalo</button>
+            </div>
+            <div class="action-buttons capture-section">
+                <button class="capture-btn" onclick="captureVertical()">📸 Tải Ảnh Dọc (Mobile)</button>
+                <button class="capture-btn horizontal" onclick="captureHorizontal()">📸 Tải Ảnh Ngang (A4)</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="export-layout">
+    <div class="exp-header">
+        <img src="vikki-digital-bank-logo-c-1-1030x429.png">
+        <h2>MÔ PHỎNG LÃI SUẤT</h2>
+        <p>Số tiền gửi: <b id="exp-amount-val"></b> VNĐ &nbsp;&nbsp;|&nbsp;&nbsp; Kỳ hạn: <b id="exp-term-val"></b> Tháng</p>
+        <p style="font-size: 14px; margin-bottom: 15px;">Ngày gửi: <span id="exp-date-val"></span> &nbsp;&nbsp;|&nbsp;&nbsp; Tổng số ngày tính lãi: <span id="exp-days-val"></span> ngày</p>
+        <p><b>Nhân viên tư vấn: Thu Hà - 0362630337</b></p>
+    </div>
+    <div class="exp-body" id="exp-body"></div>
+</div>
+
+<div id="image-modal">
+    <p>👇 NHẤN GIỮ VÀO ẢNH ĐỂ LƯU VÀO MÁY 👇</p>
+    <div class="img-container"><img id="captured-image" src="" alt="Báo cáo"></div>
+    <button class="close-btn" onclick="document.getElementById('image-modal').style.display='none'">Đóng Lại</button>
+</div>
+
+<script>
+    function formatCurrency(input) {
+        let val = input.value.replace(/,/g, '').replace(/[^0-9]/g, '');
+        input.value = val ? parseInt(val).toLocaleString('en-US') : '';
+    }
+
+    function formatManual(input) {
+        let val = input.value.replace(/[^0-9\+ ]/g, ''); 
+        let parts = val.split('+');
+        for (let i = 0; i < parts.length; i++) {
+            let numStr = parts[i].replace(/[^0-9]/g, '');
+            if (numStr) {
+                parts[i] = parts[i].replace(numStr, parseInt(numStr, 10).toLocaleString('en-US'));
+            }
+        }
+        input.value = parts.join('+');
+    }
+
+    function toggleManualInput() {
+        const mode = document.querySelector('input[name="split_mode"]:checked').value;
+        document.getElementById('manual-input-group').style.display = (mode === 'manual') ? 'block' : 'none';
+    }
+
+    function getTierRate(amount, term) {
+        if (amount < 5000000) return 0;
+        if (term === 6) {
+            if (amount >= 100000000) return 0.086;
+            if (amount >= 50000000) return 0.0779;
+            return 0.0768;
+        } else {
+            if (amount >= 100000000) return 0.086;
+            if (amount >= 50000000) return 0.0789;
+            return 0.0778;
+        }
+    }
+
+    function fmt(num) { return Math.round(num).toLocaleString('vi-VN'); }
+    function pct(num) { return (num * 100).toFixed(2) + "%"; }
+
+    let finalData = ""; 
+
+    function buildMobileTable(rowsData, total) {
+        if(rowsData.length === 0) return `<p style="text-align:center; padding:10px;">Không áp dụng</p>`;
+        let html = `<table class="detail-table"><tr><th>Chi tiết sổ</th><th>Số tiền gửi</th><th>Lãi suất</th><th>Tiền lãi</th></tr>`;
+        for(let d of rowsData) html += `<tr><td>${d.name}</td><td>${fmt(d.p)}</td><td>${pct(d.r)}</td><td>${fmt(d.i)}</td></tr>`;
+        html += `<tr class="total-row"><td colspan="3">TỔNG LÃI</td><td>${fmt(total)}</td></tr></table>`;
+        return html;
+    }
+
+    function generateExportTable(title, rowsData, maxRows, total) {
+        let html = `<div class="exp-col"><div class="exp-title">${title}</div><table class="exp-table">
+            <tr><th>CHI TIẾT</th><th>SỐ TIỀN GỬI</th><th>LÃI SUẤT</th><th>TIỀN LÃI</th></tr>`;
+        if (rowsData.length === 0) {
+            html += `<tr><td colspan="4" style="text-align:center;">Không áp dụng</td></tr>`;
+            for (let i = 1; i < maxRows; i++) html += `<tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>`;
+        } else {
+            for (let i = 0; i < maxRows; i++) {
+                if (i < rowsData.length) {
+                    let d = rowsData[i];
+                    html += `<tr><td>${d.name}</td><td>${fmt(d.p)}</td><td>${pct(d.r)}</td><td>${fmt(d.i)}</td></tr>`;
+                } else {
+                    html += `<tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>`;
+                }
+            }
+        }
+        html += `<tr><td colspan="3" style="font-weight:bold; text-align:center;">TỔNG</td><td style="font-weight:bold;">${fmt(total)}</td></tr></table></div>`;
+        return html;
+    }
+
+    function calculate() {
+        const amount = parseInt(document.getElementById('amount').value.replace(/,/g, ''));
+        const term = parseInt(document.querySelector('input[name="term"]:checked').value);
+        const mode = document.querySelector('input[name="split_mode"]:checked').value;
+        const errorMsg = document.getElementById('error-msg');
+        
+        const depositDateVal = document.getElementById('deposit-date').value;
+        const pa2ManualRateVal = parseFloat(document.getElementById('pa2-manual-rate').value);
+
+        if (!amount || amount <= 0) {
+            errorMsg.innerText = "Vui lòng nhập số tiền hợp lệ!"; return;
+        }
+        if (!depositDateVal) {
+            errorMsg.innerText = "LỖI: Vui lòng chọn ngày gửi tiền!"; return;
+        }
+        if (isNaN(pa2ManualRateVal) || pa2ManualRateVal < 0 || pa2ManualRateVal > 20) {
+            errorMsg.innerText = "LỖI: Lãi suất Sổ Lãi PA2 không hợp lệ (Phải từ 0 đến 20%)!"; return;
+        }
+
+        let splits = [];
+        if (mode === 'manual') {
+            let manualStr = document.getElementById('manual-splits').value;
+            let parts = manualStr.split('+');
+            for (let p of parts) {
+                let val = parseInt(p.replace(/[^0-9]/g, ''));
+                if (!isNaN(val) && val > 0) splits.push(val);
+            }
+            let sum = splits.reduce((a, b) => a + b, 0);
+            if (sum !== amount) {
+                errorMsg.innerText = `LỖI: Tổng chia sổ (${fmt(sum)}) không khớp với Số tiền gửi (${fmt(amount)})!`;
+                return;
+            }
+            if (splits.length === 0) {
+                errorMsg.innerText = "Vui lòng nhập định dạng hợp lệ. VD: 500,000,000 + 500,000,000";
+                return;
+            }
+        }
+        errorMsg.innerText = "";
+
+        // --- TÍNH TOÁN NGÀY CỤ THỂ ---
+        const startDate = new Date(depositDateVal);
+        const endDate = new Date(startDate);
+        endDate.setMonth(endDate.getMonth() + term); 
+        
+        const diffTime = Math.abs(endDate - startDate);
+        const days = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+        
+        const displayStartDate = startDate.toLocaleDateString('vi-VN');
+        const displayEndDate = endDate.toLocaleDateString('vi-VN');
+
+        const maxRate = (term === 6) ? 0.0898 : 0.0851;
+        const ratePA3 = (term === 6) ? 0.0920 : 0.0910; 
+
+        let pa1_rows = [], pa2_rows = [], pa3_rows = [];
+        let pa1_total = 0, pa2_total = 0, pa3_total = 0;
+        
+        // --- PHƯƠNG ÁN 3 ---
+        let i3 = amount * ratePA3 * (days / 365);
+        pa3_total = i3;
+        pa3_rows.push({ name: `Sổ 1`, p: amount, r: ratePA3, i: i3 });
+
+        // --- PHƯƠNG ÁN 2 ---
+        let i1 = amount * maxRate * (days / 365);
+        let r2 = pa2ManualRateVal / 100; 
+        let i2 = i1 * r2 * (days / 365);
+        pa2_total = i1 + i2;
+        
+        pa2_rows.push({ name: `Sổ 1 (Gốc)`, p: amount, r: maxRate, i: i1 });
+        if (i2 > 0) {
+            pa2_rows.push({ name: `Sổ 2 (Lãi)`, p: i1, r: r2, i: i2 });
+        }
+
+        // --- PHƯƠNG ÁN 1 ---
+        let hidePA1 = false;
+        if (mode === 'auto' && amount < 400000000) hidePA1 = true;
+
+        if (!hidePA1) {
+            let pa1_principals = [];
+            if (mode === 'auto') {
+                let num_200 = Math.floor(amount / 200000000);
+                let remainder = amount % 200000000;
+                if (remainder === 0) {
+                    for (let i = 0; i < num_200; i++) pa1_principals.push(200000000);
+                } else {
+                    pa1_principals.push(200000000 + remainder);
+                    for (let i = 1; i < num_200; i++) pa1_principals.push(200000000);
+                }
+            } else {
+                pa1_principals = splits; 
+            }
+
+            let current_interest = 0;
+            for (let i = 0; i < pa1_principals.length; i++) {
+                let actual_principal = (i === 0) ? pa1_principals[i] : pa1_principals[i] + current_interest;
+                let interest = actual_principal * maxRate * (days / 365);
+                pa1_total += interest;
+                current_interest = interest;
+                
+                pa1_rows.push({
+                    name: `Sổ ${i+1}`, p: actual_principal, r: maxRate, i: interest
+                });
+            }
+            
+            let last_rate = getTierRate(current_interest, term);
+            let final_interest = current_interest * last_rate * (days / 365);
+            pa1_total += final_interest;
+            pa1_rows.push({
+                name: `Sổ ${pa1_principals.length + 1}`, p: current_interest, r: last_rate, i: final_interest
+            });
+        }
+
+        document.getElementById('pa1-box').style.display = hidePA1 ? 'none' : 'block';
+        document.getElementById('pa1-table').innerHTML = buildMobileTable(pa1_rows, pa1_total);
+        document.getElementById('pa2-table').innerHTML = buildMobileTable(pa2_rows, pa2_total);
+        document.getElementById('pa3-table').innerHTML = buildMobileTable(pa3_rows, pa3_total);
+        document.getElementById('result-area').style.display = 'block';
+
+        // XUẤT THÔNG TIN CHỤP ẢNH
+        document.getElementById('capture-amount-text').innerText = `Số tiền gửi: ${fmt(amount)} VNĐ (${term} Tháng)`;
+        document.getElementById('capture-date-text').innerText = `Ngày gửi: ${displayStartDate} - Đáo hạn: ${displayEndDate} (${days} ngày)`;
+
+        // XUẤT ẢNH BÁO CÁO NGANG
+        document.getElementById('exp-amount-val').innerText = fmt(amount);
+        document.getElementById('exp-term-val').innerText = term;
+        document.getElementById('exp-date-val').innerText = `${displayStartDate} đến ${displayEndDate}`;
+        document.getElementById('exp-days-val').innerText = days;
+
+        let maxRows = Math.max(pa1_rows.length, pa2_rows.length, pa3_rows.length);
+        
+        document.getElementById('exp-body').innerHTML = 
+            generateExportTable("PHƯƠNG ÁN 1", pa1_rows, maxRows, pa1_total) +
+            generateExportTable("PHƯƠNG ÁN 2", pa2_rows, maxRows, pa2_total) +
+            generateExportTable("PHƯƠNG ÁN 3", pa3_rows, maxRows, pa3_total);
+
+        // KẾT QUẢ VĂN BẢN ZALO
+        finalData = `📊 BẢNG TÍNH LÃI SUẤT - ${term} THÁNG\n`;
+        finalData += `💰 Số tiền gửi: ${fmt(amount)} VNĐ\n`;
+        finalData += `📅 Gửi: ${displayStartDate} - Đáo hạn: ${displayEndDate} (${days} ngày)\n`;
+        if (mode === 'manual') finalData += `(Đã chia khoản PA1: ${splits.map(s => fmt(s)).join(' + ')})\n`;
+        finalData += `------------------------\n`;
+        
+        if (!hidePA1) {
+            finalData += `✅ Phương Án 1\n`;
+            for(let r of pa1_rows) finalData += `+ ${r.name} (${fmt(r.p)}): sinh lãi ${fmt(r.i)}\n`;
+            finalData += `👉 TỔNG LÃI: ${fmt(pa1_total)} VNĐ\n------------------------\n`;
+        }
+        finalData += `✅ Phương Án 2\n`;
+        for(let r of pa2_rows) finalData += `+ ${r.name} (${fmt(r.p)}): sinh lãi ${fmt(r.i)}\n`;
+        finalData += `👉 TỔNG LÃI: ${fmt(pa2_total)} VNĐ\n------------------------\n`;
+        finalData += `➖ Phương Án 3\n`;
+        for(let r of pa3_rows) finalData += `+ ${r.name} (${fmt(r.p)}): sinh lãi ${fmt(r.i)}\n`;
+        finalData += `👉 TỔNG LÃI: ${fmt(pa3_total)} VNĐ\n\n👩‍💼 Nhân viên tư vấn: Thu Hà - 0362630337`;
+    }
+
+    function copyToClipboard() {
+        navigator.clipboard.writeText(finalData).then(() => { alert("Đã copy toàn bộ bảng phân tích Zalo!"); }).catch(err => alert("Lỗi copy."));
+    }
+
+    function captureVertical() {
+        const container = document.getElementById('main-container');
+        const inputForm = document.getElementById('input-form');
+        const actionSections = document.querySelectorAll('.action-buttons');
+        const infoHeader = document.getElementById('capture-info-header');
+        const originalBg = container.style.background;
+        
+        inputForm.style.display = 'none';
+        actionSections.forEach(el => el.style.display = 'none');
+        infoHeader.style.display = 'block'; 
+        container.style.background = 'white';
+        
+        html2canvas(container, { scale: 2, backgroundColor: "#ffffff", useCORS: true }).then(canvas => {
+            inputForm.style.display = 'block';
+            actionSections.forEach(el => el.style.display = 'flex');
+            infoHeader.style.display = 'none';
+            container.style.background = originalBg;
+            
+            document.getElementById('captured-image').src = canvas.toDataURL('image/png');
+            document.getElementById('image-modal').style.display = 'flex';
+        }).catch(err => {
+            alert("Đã xảy ra lỗi khi tạo ảnh dọc. Vui lòng thử lại.");
+            inputForm.style.display = 'block';
+            actionSections.forEach(el => el.style.display = 'flex');
+            infoHeader.style.display = 'none';
+            container.style.background = originalBg;
+        });
+    }
+
+    function captureHorizontal() {
+        const exportNode = document.getElementById('export-layout');
+        html2canvas(exportNode, { scale: 2, backgroundColor: "#ffffff", useCORS: true }).then(canvas => {
+            document.getElementById('captured-image').src = canvas.toDataURL('image/png');
+            document.getElementById('image-modal').style.display = 'flex';
+        }).catch(err => alert("Đã xảy ra lỗi khi tạo ảnh ngang. Vui lòng thử lại."));
+    }
+</script>
+
+</body>
+</html>
