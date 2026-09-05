@@ -59,13 +59,12 @@
         .form-group { margin-bottom: 15px; position: relative; }
         label { display: block; font-weight: 600; margin-bottom: 5px; color: #555; font-size: 14px; }
         
-        /* Cải thiện giao diện ô nhập liệu (Đặc biệt là xóa nền xám của ô Date trên iOS) */
         input[type="text"], input[type="date"], input[type="number"] {
             width: 100%; padding: 12px; font-size: 16px; border: 2px solid #ddd;
             border-radius: 8px; outline: none; transition: border-color 0.3s;
-            -webkit-appearance: none; /* Xóa giao diện mặc định iOS */
+            -webkit-appearance: none; 
             appearance: none;
-            background-color: white; /* Ép nền trắng */
+            background-color: white; 
             color: var(--text-main);
             font-family: inherit;
         }
@@ -147,12 +146,12 @@
             color: white; font-size: 16px; font-weight: bold; text-align: center; margin-bottom: 15px;
             background: var(--vikki-magenta); padding: 10px 15px; border-radius: 8px;
         }
-        #image-modal .img-container { overflow: auto; max-height: 75vh; width: 100%; text-align: center; }
+        #image-modal .img-container { overflow: auto; max-height: 70vh; width: 100%; text-align: center; }
         #captured-image { max-width: 100%; border-radius: 4px; box-shadow: 0 5px 25px rgba(0,0,0,0.5); }
-        .close-btn {
-            margin-top: 20px; background: #333; color: white; border: 2px solid white; 
-            padding: 10px 30px; border-radius: 8px; font-weight: bold; font-size: 16px; cursor: pointer;
-        }
+        
+        .modal-buttons { display: flex; gap: 10px; margin-top: 20px; width: 100%; max-width: 400px;}
+        .download-btn { flex: 1; background: #28a745; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; font-size: 15px; cursor: pointer; }
+        .close-btn { flex: 1; background: #333; color: white; border: 2px solid white; padding: 12px; border-radius: 8px; font-weight: bold; font-size: 15px; cursor: pointer; }
 
         #export-layout {
             position: absolute; left: -9999px; top: 0; width: 1200px; 
@@ -248,7 +247,7 @@
                 </div>
             </div>
             
-            <!-- Phục hồi đầy đủ các nút bấm -->
+            <!-- Các nút bấm chức năng -->
             <div class="action-buttons copy-section">
                 <button class="copy-btn" onclick="copyToClipboard()">📋 Copy Zalo</button>
             </div>
@@ -261,7 +260,7 @@
     </div>
 </div>
 
-<!-- LAYOUT XUẤT ẢNH A4 NGANG (Ẩn mặc định) -->
+<!-- LAYOUT XUẤT ẢNH A4 NGANG -->
 <div id="export-layout">
     <div class="exp-header">
         <img src="vikki-digital-bank-logo-c-1-1030x429.png" onerror="this.style.display='none'">
@@ -275,30 +274,23 @@
 
 <!-- POPUP HIỆN ẢNH ĐỂ LƯU -->
 <div id="image-modal">
-    <p>👇 NHẤN GIỮ VÀO ẢNH ĐỂ LƯU VÀO MÁY 👇</p>
+    <p>👇 BẤM VÀO NÚT BÊN DƯỚI ĐỂ TẢI ẢNH 👇</p>
     <div class="img-container"><img id="captured-image" src="" alt="Báo cáo"></div>
-    <button class="close-btn" onclick="document.getElementById('image-modal').style.display='none'">Đóng Lại</button>
+    <div class="modal-buttons">
+        <button class="download-btn" onclick="downloadImage()">⬇️ Tải Ảnh Về Máy</button>
+        <button class="close-btn" onclick="document.getElementById('image-modal').style.display='none'">Đóng Lại</button>
+    </div>
 </div>
 
 <script>
-    /* =========================================
-       ĐĂNG KÝ SERVICE WORKER (CHO PWA OFFLINE)
-       ========================================= */
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-            navigator.serviceWorker.register('sw.js').then(reg => {
-                console.log('Đăng ký Service Worker thành công.', reg);
-            }).catch(err => {
-                console.log('Lỗi đăng ký Service Worker:', err);
-            });
+            navigator.serviceWorker.register('sw.js').catch(err => console.log('Lỗi SW:', err));
         });
     }
 
-    // Tắt gợi ý khi bấm chỗ khác
     document.addEventListener('click', function(e) {
-        if (e.target.id !== 'amount') {
-            document.getElementById('suggestion-box').style.display = 'none';
-        }
+        if (e.target.id !== 'amount') document.getElementById('suggestion-box').style.display = 'none';
     });
 
     function formatCurrency(valStr) {
@@ -306,21 +298,19 @@
         return val ? parseInt(val).toLocaleString('en-US') : '';
     }
 
-    // Logic Hộp Gợi Ý Số Tiền
     function handleAmountInput(input) {
         input.value = formatCurrency(input.value);
         let rawVal = parseInt(input.value.replace(/,/g, ''));
         const sugBox = document.getElementById('suggestion-box');
         
         if (!rawVal || isNaN(rawVal)) {
-            sugBox.style.display = 'none';
-            return;
+            sugBox.style.display = 'none'; return;
         }
 
         let html = '';
         let val1 = rawVal * 1000;
         let val2 = rawVal * 1000000;
-        const maxLimit = 100000000000; // 100 Tỷ VNĐ
+        const maxLimit = 100000000000; 
         
         if (val1 <= maxLimit) html += `<div onclick="selectSuggestion(${val1})">${val1.toLocaleString('en-US')}</div>`;
         if (val2 <= maxLimit) html += `<div onclick="selectSuggestion(${val2})">${val2.toLocaleString('en-US')}</div>`;
@@ -400,7 +390,6 @@
         return html;
     }
 
-    // Logic nút Quay Lại (Điều hướng UX app)
     function goBack() {
         document.getElementById('input-form').style.display = 'block';
         document.getElementById('result-area').style.display = 'none';
@@ -413,22 +402,14 @@
         const term = parseInt(document.querySelector('input[name="term"]:checked').value);
         const mode = document.querySelector('input[name="split_mode"]:checked').value;
         const errorMsg = document.getElementById('error-msg');
-        
         const depositDateVal = document.getElementById('deposit-date').value;
         const pa2Input = document.getElementById('pa2-manual-rate').value;
         
-        // Mặc định PA2 là 7.68 nếu để trống
         const pa2ManualRateVal = pa2Input === "" ? 7.68 : parseFloat(pa2Input);
 
-        if (!amount || amount <= 0) {
-            errorMsg.innerText = "Vui lòng nhập số tiền hợp lệ!"; return;
-        }
-        if (!depositDateVal) {
-            errorMsg.innerText = "LỖI: Vui lòng chọn ngày gửi tiền!"; return;
-        }
-        if (isNaN(pa2ManualRateVal) || pa2ManualRateVal < 0 || pa2ManualRateVal > 20) {
-            errorMsg.innerText = "LỖI: Lãi suất Sổ Lãi PA2 không hợp lệ!"; return;
-        }
+        if (!amount || amount <= 0) { errorMsg.innerText = "Vui lòng nhập số tiền hợp lệ!"; return; }
+        if (!depositDateVal) { errorMsg.innerText = "LỖI: Vui lòng chọn ngày gửi tiền!"; return; }
+        if (isNaN(pa2ManualRateVal) || pa2ManualRateVal < 0 || pa2ManualRateVal > 20) { errorMsg.innerText = "LỖI: Lãi suất Sổ Lãi PA2 không hợp lệ!"; return; }
 
         let splits = [];
         if (mode === 'manual') {
@@ -439,18 +420,11 @@
                 if (!isNaN(val) && val > 0) splits.push(val);
             }
             let sum = splits.reduce((a, b) => a + b, 0);
-            if (sum !== amount) {
-                errorMsg.innerText = `LỖI: Tổng chia sổ (${fmt(sum)}) không khớp với Số tiền gửi (${fmt(amount)})!`;
-                return;
-            }
-            if (splits.length === 0) {
-                errorMsg.innerText = "Vui lòng nhập định dạng hợp lệ. VD: 500,000,000 + 500,000,000";
-                return;
-            }
+            if (sum !== amount) { errorMsg.innerText = `LỖI: Tổng chia sổ (${fmt(sum)}) không khớp với Số tiền gửi (${fmt(amount)})!`; return; }
+            if (splits.length === 0) { errorMsg.innerText = "Vui lòng nhập định dạng hợp lệ. VD: 500,000,000 + 500,000,000"; return; }
         }
         errorMsg.innerText = "";
 
-        // --- TÍNH TOÁN NGÀY ---
         const startDate = new Date(depositDateVal);
         const endDate = new Date(startDate);
         endDate.setMonth(endDate.getMonth() + term); 
@@ -503,7 +477,6 @@
                 let interest = actual_principal * maxRate * (days / 365);
                 pa1_total += interest;
                 current_interest = interest;
-                
                 pa1_rows.push({ name: `Sổ ${i+1}`, p: actual_principal, r: maxRate, i: interest });
             }
             
@@ -518,7 +491,6 @@
         document.getElementById('pa2-table').innerHTML = buildMobileTable(pa2_rows, pa2_total);
         document.getElementById('pa3-table').innerHTML = buildMobileTable(pa3_rows, pa3_total);
         
-        // --- CHUYỂN GIAO DIỆN (Ẩn Form, Hiện Kết Quả) ---
         document.getElementById('input-form').style.display = 'none';
         document.getElementById('capture-info-header').style.display = 'block';
         document.getElementById('result-area').style.display = 'block';
@@ -558,50 +530,56 @@
         navigator.clipboard.writeText(finalData).then(() => { alert("Đã copy toàn bộ bảng phân tích Zalo!"); }).catch(err => alert("Lỗi copy."));
     }
 
-    // Logic Sửa lỗi ảnh dọc
+    /* --- CƠ CHẾ CHỤP ẢNH TÀNG HÌNH & CHỐNG TREO --- */
     function captureVertical() {
         const container = document.getElementById('main-container');
-        const inputForm = document.getElementById('input-form');
         const actionSections = document.querySelectorAll('.action-buttons, .back-btn');
-        const infoHeader = document.getElementById('capture-info-header');
         const originalBg = container.style.background;
         
-        inputForm.style.display = 'none';
         actionSections.forEach(el => el.style.display = 'none');
-        infoHeader.style.display = 'block'; 
         container.style.background = 'white';
         
         html2canvas(container, { scale: 2, backgroundColor: "#ffffff", useCORS: true }).then(canvas => {
-            // Không hiện lại inputForm ở đây vì đang ở màn hình kết quả
-            actionSections.forEach(el => el.style.display = (el.classList.contains('back-btn') ? 'block' : 'flex'));
-            container.style.background = originalBg;
-            
             document.getElementById('captured-image').src = canvas.toDataURL('image/png');
             document.getElementById('image-modal').style.display = 'flex';
         }).catch(err => {
-            alert("Đã xảy ra lỗi khi tạo ảnh dọc. Vui lòng thử lại.");
+            alert("Đã xảy ra lỗi khi tạo ảnh dọc.");
+        }).finally(() => {
             actionSections.forEach(el => el.style.display = (el.classList.contains('back-btn') ? 'block' : 'flex'));
             container.style.background = originalBg;
         });
     }
 
-    // Logic Sửa lỗi ảnh ngang
     function captureHorizontal() {
         const exportNode = document.getElementById('export-layout');
         
-        // Kéo vào trong màn hình nhưng đặt ở lớp mờ dưới cùng
+        // Hiện layout trong suốt và giấu dưới cùng
         exportNode.style.left = '0';
         exportNode.style.top = '0';
         exportNode.style.zIndex = '-100';
+        exportNode.style.opacity = '0'; 
 
         html2canvas(exportNode, { scale: 2, backgroundColor: "#ffffff", useCORS: true }).then(canvas => {
-            exportNode.style.left = '-9999px'; // Trả về chỗ cũ
             document.getElementById('captured-image').src = canvas.toDataURL('image/png');
             document.getElementById('image-modal').style.display = 'flex';
         }).catch(err => {
+            alert("Trình duyệt chặn khởi tạo ảnh ngang. Vui lòng thử lại.");
+        }).finally(() => {
+            // Vòng bảo vệ: Luôn dọn dẹp sạch sẽ
             exportNode.style.left = '-9999px';
-            alert("Đã xảy ra lỗi khi tạo ảnh ngang. Vui lòng thử lại.");
+            exportNode.style.opacity = '1';
         });
+    }
+
+    /* --- NÚT TẢI ẢNH TỰ ĐỘNG --- */
+    function downloadImage() {
+        const img = document.getElementById('captured-image');
+        const link = document.createElement('a');
+        link.href = img.src;
+        link.download = 'Bao-Cao-Lai-Suat-Vikki.png';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
     }
 </script>
 </body>
