@@ -45,7 +45,7 @@
         .header h1 { margin: 0; font-size: 18px; text-transform: uppercase; color: var(--vikki-magenta); }
         .header p { margin: 5px 0 0; font-size: 14px; color: #555; }
         .content { padding: 15px; }
-        .form-group { margin-bottom: 15px; }
+        .form-group { margin-bottom: 15px; position: relative; }
         label { display: block; font-weight: 600; margin-bottom: 5px; color: #555; font-size: 14px; }
         input[type="text"], input[type="date"], input[type="number"] {
             width: 100%; padding: 10px; font-size: 16px; border: 2px solid #ddd;
@@ -53,6 +53,18 @@
         }
         input[type="text"]:focus, input[type="date"]:focus, input[type="number"]:focus { border-color: var(--vikki-magenta); }
         
+        /* Box Gợi Ý Số Tiền */
+        .suggestion-box {
+            display: none; position: absolute; top: 100%; left: 0; width: 100%;
+            background: white; border: 1px solid #ddd; border-top: none;
+            border-radius: 0 0 8px 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); z-index: 10;
+        }
+        .suggestion-box div {
+            padding: 10px; font-size: 15px; cursor: pointer; color: #333; border-bottom: 1px solid #f0f0f0;
+        }
+        .suggestion-box div:last-child { border-bottom: none; border-radius: 0 0 8px 8px; }
+        .suggestion-box div:hover { background-color: #fcf0f8; color: var(--vikki-magenta); font-weight: bold; }
+
         .radio-group { display: flex; gap: 10px; }
         .radio-group label { flex: 1; cursor: pointer; text-align: center; }
         .radio-group input { display: none; }
@@ -151,7 +163,8 @@
         <div id="input-form">
             <div class="form-group">
                 <label for="amount">Số Tiền Gửi (VNĐ):</label>
-                <input type="text" id="amount" placeholder="Ví dụ: 900,000,000" onkeyup="formatCurrency(this)">
+                <input type="text" id="amount" placeholder="Ví dụ: 900,000,000" onkeyup="handleAmountInput(this)" autocomplete="off">
+                <div id="suggestion-box" class="suggestion-box"></div>
                 <div id="error-msg" class="error"></div>
             </div>
 
@@ -170,7 +183,7 @@
 
             <div class="form-group">
                 <label for="pa2-manual-rate">Lãi suất Sổ Lãi PA2 (%/năm):</label>
-                <input type="number" id="pa2-manual-rate" step="0.01" placeholder="Ví dụ nhập: 7.5">
+                <input type="number" id="pa2-manual-rate" step="0.01" placeholder="Mặc định: 7.68">
             </div>
 
             <div class="form-group">
@@ -240,9 +253,54 @@
 </div>
 
 <script>
-    function formatCurrency(input) {
-        let val = input.value.replace(/,/g, '').replace(/[^0-9]/g, '');
-        input.value = val ? parseInt(val).toLocaleString('en-US') : '';
+    // Ẩn hộp gợi ý khi bấm ra ngoài
+    document.addEventListener('click', function(e) {
+        if (e.target.id !== 'amount') {
+            document.getElementById('suggestion-box').style.display = 'none';
+        }
+    });
+
+    function formatCurrency(valStr) {
+        let val = valStr.replace(/,/g, '').replace(/[^0-9]/g, '');
+        return val ? parseInt(val).toLocaleString('en-US') : '';
+    }
+
+    function handleAmountInput(input) {
+        // Vẫn format số tay khách nhập
+        input.value = formatCurrency(input.value);
+        
+        let rawVal = parseInt(input.value.replace(/,/g, ''));
+        const sugBox = document.getElementById('suggestion-box');
+        
+        if (!rawVal || isNaN(rawVal)) {
+            sugBox.style.display = 'none';
+            return;
+        }
+
+        let html = '';
+        let val1 = rawVal * 1000;
+        let val2 = rawVal * 1000000;
+        const maxLimit = 100000000000; // 100 Tỷ
+        
+        if (val1 <= maxLimit) {
+            html += `<div onclick="selectSuggestion(${val1})">${val1.toLocaleString('en-US')}</div>`;
+        }
+        if (val2 <= maxLimit) {
+            html += `<div onclick="selectSuggestion(${val2})">${val2.toLocaleString('en-US')}</div>`;
+        }
+        
+        if (html !== '') {
+            sugBox.innerHTML = html;
+            sugBox.style.display = 'block';
+        } else {
+            sugBox.style.display = 'none';
+        }
+    }
+
+    function selectSuggestion(val) {
+        const input = document.getElementById('amount');
+        input.value = val.toLocaleString('en-US');
+        document.getElementById('suggestion-box').style.display = 'none';
     }
 
     function formatManual(input) {
@@ -315,7 +373,10 @@
         const errorMsg = document.getElementById('error-msg');
         
         const depositDateVal = document.getElementById('deposit-date').value;
-        const pa2ManualRateVal = parseFloat(document.getElementById('pa2-manual-rate').value);
+        const pa2Input = document.getElementById('pa2-manual-rate').value;
+        
+        // Nếu không nhập gì, lấy mặc định 7.68, ngược lại lấy số nhập vào
+        const pa2ManualRateVal = pa2Input === "" ? 7.68 : parseFloat(pa2Input);
 
         if (!amount || amount <= 0) {
             errorMsg.innerText = "Vui lòng nhập số tiền hợp lệ!"; return;
@@ -347,7 +408,7 @@
         }
         errorMsg.innerText = "";
 
-        // --- TÍNH TOÁN NGÀY CỤ THỂ ---
+        // --- TÍNH TOÁN NGÀY ---
         const startDate = new Date(depositDateVal);
         const endDate = new Date(startDate);
         endDate.setMonth(endDate.getMonth() + term); 
