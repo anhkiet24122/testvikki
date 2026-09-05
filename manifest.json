@@ -1,0 +1,20 @@
+{
+  "name": "Công Cụ Tính Lãi Suất - Vikki Bank",
+  "short_name": "Lãi Suất Vikki",
+  "start_url": "./INDEX.HTML",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#e800a0",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
