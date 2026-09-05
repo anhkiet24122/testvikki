@@ -11,7 +11,6 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="Lãi Suất Vikki">
-    <!-- Bạn cần có 1 ảnh tên icon-192.png để làm icon app ngoài màn hình -->
     <link rel="apple-touch-icon" href="icon-192.png">
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -34,7 +33,7 @@
             padding: 10px;
             color: var(--text-main);
             overflow-x: hidden;
-            -webkit-tap-highlight-color: transparent; /* Tắt nháy xanh khi bấm trên mobile */
+            -webkit-tap-highlight-color: transparent;
         }
         .container {
             max-width: 600px;
@@ -57,14 +56,22 @@
         .header p { margin: 5px 0 0; font-size: 14px; color: #555; }
         .content { padding: 15px; }
         
-        /* Box Gợi Ý Số Tiền */
         .form-group { margin-bottom: 15px; position: relative; }
         label { display: block; font-weight: 600; margin-bottom: 5px; color: #555; font-size: 14px; }
+        
+        /* Cải thiện giao diện ô nhập liệu (Đặc biệt là xóa nền xám của ô Date trên iOS) */
         input[type="text"], input[type="date"], input[type="number"] {
             width: 100%; padding: 12px; font-size: 16px; border: 2px solid #ddd;
             border-radius: 8px; outline: none; transition: border-color 0.3s;
+            -webkit-appearance: none; /* Xóa giao diện mặc định iOS */
+            appearance: none;
+            background-color: white; /* Ép nền trắng */
+            color: var(--text-main);
+            font-family: inherit;
         }
-        input[type="text"]:focus, input[type="date"]:focus, input[type="number"]:focus { border-color: var(--vikki-magenta); }
+        input[type="text"]:focus, input[type="date"]:focus, input[type="number"]:focus { 
+            border-color: var(--vikki-magenta); 
+        }
         
         .suggestion-box {
             display: none; position: absolute; top: 100%; left: 0; width: 100%;
@@ -241,8 +248,12 @@
                 </div>
             </div>
             
+            <!-- Phục hồi đầy đủ các nút bấm -->
             <div class="action-buttons copy-section">
                 <button class="copy-btn" onclick="copyToClipboard()">📋 Copy Zalo</button>
+            </div>
+            <div class="action-buttons capture-section">
+                <button class="capture-btn" onclick="captureVertical()">📸 Ảnh Dọc</button>
                 <button class="capture-btn horizontal" onclick="captureHorizontal()">📸 Ảnh Ngang</button>
             </div>
             <button class="back-btn" onclick="goBack()">🔙 Quay lại chỉnh sửa</button>
@@ -394,7 +405,6 @@
         document.getElementById('input-form').style.display = 'block';
         document.getElementById('result-area').style.display = 'none';
         document.getElementById('capture-info-header').style.display = 'none';
-        // Cuộn mượt lên đầu form
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
@@ -548,7 +558,34 @@
         navigator.clipboard.writeText(finalData).then(() => { alert("Đã copy toàn bộ bảng phân tích Zalo!"); }).catch(err => alert("Lỗi copy."));
     }
 
-    // Logic Sửa lỗi ảnh ngang (z-index hack)
+    // Logic Sửa lỗi ảnh dọc
+    function captureVertical() {
+        const container = document.getElementById('main-container');
+        const inputForm = document.getElementById('input-form');
+        const actionSections = document.querySelectorAll('.action-buttons, .back-btn');
+        const infoHeader = document.getElementById('capture-info-header');
+        const originalBg = container.style.background;
+        
+        inputForm.style.display = 'none';
+        actionSections.forEach(el => el.style.display = 'none');
+        infoHeader.style.display = 'block'; 
+        container.style.background = 'white';
+        
+        html2canvas(container, { scale: 2, backgroundColor: "#ffffff", useCORS: true }).then(canvas => {
+            // Không hiện lại inputForm ở đây vì đang ở màn hình kết quả
+            actionSections.forEach(el => el.style.display = (el.classList.contains('back-btn') ? 'block' : 'flex'));
+            container.style.background = originalBg;
+            
+            document.getElementById('captured-image').src = canvas.toDataURL('image/png');
+            document.getElementById('image-modal').style.display = 'flex';
+        }).catch(err => {
+            alert("Đã xảy ra lỗi khi tạo ảnh dọc. Vui lòng thử lại.");
+            actionSections.forEach(el => el.style.display = (el.classList.contains('back-btn') ? 'block' : 'flex'));
+            container.style.background = originalBg;
+        });
+    }
+
+    // Logic Sửa lỗi ảnh ngang
     function captureHorizontal() {
         const exportNode = document.getElementById('export-layout');
         
